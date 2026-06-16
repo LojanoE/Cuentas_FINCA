@@ -99,20 +99,31 @@ workerForm?.addEventListener("submit", async (e) => {
 onAuthStateChanged(auth, async (user) => {
   if (!user) return;
 
-  // Verificar si es admin
-  const userRef = doc(db, "users", user.uid);
-  const userSnap = await getDoc(userRef);
+  try {
+    // Verificar si es admin
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
 
-  if (!userSnap.exists() || userSnap.data().role !== "admin") {
+    if (!userSnap.exists()) {
+      await signOut(auth);
+      showMessage("Tu cuenta no está registrada como administrador en Firestore.", "error");
+      return;
+    }
+
+    if (userSnap.data().role !== "admin") {
+      await signOut(auth);
+      showMessage("No tienes permisos de administrador.", "error");
+      return;
+    }
+
+    // Si está en el login, redirigir al admin
+    const path = window.location.pathname;
+    if (path === "/" || path === "/index.html") {
+      window.location.href = "admin.html";
+    }
+  } catch (error) {
     await signOut(auth);
-    showMessage("No tienes permisos de administrador.", "error");
-    return;
-  }
-
-  // Si está en el login, redirigir al admin
-  const path = window.location.pathname;
-  if (path === "/" || path === "/index.html") {
-    window.location.href = "admin.html";
+    showMessage("Error de Firestore: " + error.message, "error");
   }
 });
 
