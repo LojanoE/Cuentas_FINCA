@@ -1,4 +1,5 @@
-import { auth, db, logoutUser, hashPassword } from "./auth.js";
+import { db } from "./firebase-config.js";
+import { logoutUser, isAdminLoggedIn } from "./auth.js";
 import {
   collection,
   query,
@@ -6,20 +7,16 @@ import {
   getDocs,
   addDoc,
   doc,
-  getDoc,
   setDoc,
   onSnapshot,
   serverTimestamp,
   orderBy
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Actualizar email del admin en el header
-const adminEmailSpan = document.getElementById("adminEmail");
-auth.onAuthStateChanged((user) => {
-  if (user && adminEmailSpan) {
-    adminEmailSpan.textContent = user.email;
-  }
-});
+// Verificar sesión de admin
+if (!isAdminLoggedIn()) {
+  window.location.href = "index.html";
+}
 
 // Cerrar sesión
 document.getElementById("logoutBtn")?.addEventListener("click", logoutUser);
@@ -51,11 +48,11 @@ function loadWorkers() {
       li.innerHTML = `
         <div>
           <div class="worker-name">${escapeHtml(worker.name)}</div>
-          <div style="font-size:0.85rem; color:#666;">@${escapeHtml(worker.username || "")}</div>
+          <div style="font-size:0.85rem; color:#666;">${escapeHtml(worker.phone || "Sin teléfono")}</div>
         </div>
         <div class="worker-balance">$${formatMoney(balance)}</div>
       `;
-      li.addEventListener("click", () => openDetailModal(workerId, worker.name, balance, worker.phone, worker.username));
+      li.addEventListener("click", () => openDetailModal(workerId, worker.name, balance, worker.phone));
       workerList.appendChild(li);
     }
   }, (error) => {
@@ -92,19 +89,11 @@ window.closeWorkerModal = function() {
 workerForm?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const adminUser = auth.currentUser;
-  if (!adminUser) {
-    showMessage(workerFormMessage, "No hay sesión de administrador.", "error");
-    return;
-  }
-
   const name = document.getElementById("wName").value.trim();
-  const username = document.getElementById("wUsername").value.trim().toLowerCase();
-  const password = document.getElementById("wPassword").value;
   const phone = document.getElementById("wPhone").value.trim();
   const notes = document.getElementById("wNotes").value.trim();
 
-  if (!name || !username || !password || !phone) {
+  if (!name || !phone) {
     showMessage(workerFormMessage, "Completa todos los campos obligatorios.", "error");
     return;
   }
@@ -112,25 +101,13 @@ workerForm?.addEventListener("submit", async (e) => {
   try {
     showMessage(workerFormMessage, "Guardando trabajador...", "info");
 
-    // Verificar que el usuario no exista
-    const usernameQuery = query(collection(db, "workers"), where("username", "==", username));
-    const usernameSnap = await getDocs(usernameQuery);
-    if (!usernameSnap.empty) {
-      showMessage(workerFormMessage, "Ese nombre de usuario ya está en uso.", "error");
-      return;
-    }
-
-    const passwordHash = await hashPassword(password);
     const workerId = doc(collection(db, "workers")).id;
 
     await setDoc(doc(db, "workers", workerId), {
       name,
-      username,
-      passwordHash,
       phone,
       notes,
-      createdAt: serverTimestamp(),
-      createdBy: adminUser.uid
+      createdAt: serverTimestamp()
     });
 
     showMessage(workerFormMessage, "Trabajador creado correctamente.", "success");
@@ -152,15 +129,13 @@ const whatsappBtn = document.getElementById("whatsappBtn");
 
 let currentDetailUnsubscribe = null;
 let currentWorkerPhone = "";
-let currentWorkerUsername = "";
 
-window.openDetailModal = async function(workerId, name, balance, phone, username) {
+window.openDetailModal = async function(workerId, name, balance, phone) {
   detailModal.classList.add("active");
   detailName.textContent = name;
   detailBalance.textContent = "$" + formatMoney(balance);
   detailWorkerId.value = workerId;
   currentWorkerPhone = phone || "";
-  currentWorkerUsername = username || "";
 
   // Fecha por defecto: hoy
   document.getElementById("aDate").valueAsDate = new Date();
@@ -205,7 +180,6 @@ window.closeDetailModal = function() {
   advanceForm?.reset();
   hideMessage(advanceFormMessage);
   currentWorkerPhone = "";
-  currentWorkerUsername = "";
   if (currentDetailUnsubscribe) {
     currentDetailUnsubscribe();
     currentDetailUnsubscribe = null;
@@ -230,8 +204,7 @@ advanceForm?.addEventListener("submit", async (e) => {
       date,
       amount,
       concept,
-      createdAt: serverTimestamp(),
-      createdBy: auth.currentUser?.uid || ""
+      createdAt: serverTimestamp()
     });
     showMessage(advanceFormMessage, "Adelanto guardado correctamente.", "success");
     advanceForm.reset();
@@ -250,7 +223,7 @@ whatsappBtn?.addEventListener("click", () => {
   }
 
   const url = window.location.origin + window.location.pathname.replace("admin.html", "index.html");
-  const text = `Hola ${detailName.textContent}, tu cuenta en Cuentas FINCA ha sido creada.\n\nUsuario: ${currentWorkerUsername}\nIngresa aquí: ${url}\n\nEl administrador te dará la contraseña.`;
+  const text = `Hola ${detailName.textContent}, tu registro en Cuentas FINCA ha sido creado.\n\nPuedes consultar tu cuenta aquí: ${url}`;
   const waLink = `https://wa.me/${currentWorkerPhone}?text=${encodeURIComponent(text)}`;
   window.open(waLink, "_blank");
 });

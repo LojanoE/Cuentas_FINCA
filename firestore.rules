@@ -1,34 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Función: ¿el usuario está autenticado?
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    // Función: ¿es administrador?
-    function isAdmin() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
-    }
-
-    // Colección users: solo el admin puede leer/escribir
-    match /users/{userId} {
-      allow read, write: if isAdmin();
-    }
-
-    // Colección workers: lectura pública (los trabajadores no usan Firebase Auth),
-    // escritura solo para el administrador.
-    match /workers/{workerId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    // Colección advances: lectura pública, escritura solo admin.
-    match /advances/{advanceId} {
-      allow read: if true;
-      allow write: if isAdmin();
+    // Acceso abierto para simplificar (solo uso interno)
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
