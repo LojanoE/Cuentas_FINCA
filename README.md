@@ -52,14 +52,23 @@ service cloud.firestore {
 
 5. Haz clic en **Publish**.
 
+### Crear índices en Firestore
+
+La app necesita dos índices compuestos. Cuando intentes usarla, Firebase te dará enlaces para crearlos, o puedes crearlos manualmente en **Firestore Database > Indexes > Composite indexes**:
+
+1. Colección: `advances`
+   - `workerId` (Ascending)
+   - `date` (Descending)
+
 ## Cómo usar
 
 1. Abre la URL de GitHub Pages.
 2. Ingresa la contraseña: **`Mirador1`**
 3. Crea trabajadores con nombre y número de celular.
 4. Haz clic en un trabajador para ver su cuenta y agregar adelantos.
-5. Usa el botón **🔗 Copiar enlace del trabajador** para copiar su enlace único.
-6. Usa el botón **📱 Avisar por WhatsApp** para enviar el aviso con el enlace.
+5. Después de guardar un adelanto, usa el botón **📱 Avisar este adelanto por WhatsApp**.
+6. Usa el botón **🔗 Copiar enlace del trabajador** para copiar su enlace único.
+7. Usa el botón **📱 Avisar por WhatsApp** para enviar el aviso de registro con el enlace.
 
 ### Enlace del trabajador
 

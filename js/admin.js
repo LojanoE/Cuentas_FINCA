@@ -126,8 +126,11 @@ const advanceForm = document.getElementById("advanceForm");
 const advanceFormMessage = document.getElementById("advanceFormMessage");
 const advancesTable = document.getElementById("advancesTable");
 const whatsappBtn = document.getElementById("whatsappBtn");
+const advanceWhatsappContainer = document.getElementById("advanceWhatsappContainer");
+const advanceWhatsappBtn = document.getElementById("advanceWhatsappBtn");
 
 let currentDetailUnsubscribe = null;
+let lastAdvance = null;
 let currentWorkerId = "";
 let currentWorkerPhone = "";
 
@@ -183,6 +186,8 @@ window.closeDetailModal = function() {
   hideMessage(advanceFormMessage);
   currentWorkerId = "";
   currentWorkerPhone = "";
+  lastAdvance = null;
+  advanceWhatsappContainer?.classList.add("hidden");
   if (currentDetailUnsubscribe) {
     currentDetailUnsubscribe();
     currentDetailUnsubscribe = null;
@@ -209,7 +214,13 @@ advanceForm?.addEventListener("submit", async (e) => {
       concept,
       createdAt: serverTimestamp()
     });
+
+    lastAdvance = { date, amount, concept };
     showMessage(advanceFormMessage, "Adelanto guardado correctamente.", "success");
+
+    // Mostrar botón para avisar por WhatsApp
+    advanceWhatsappContainer?.classList.remove("hidden");
+
     advanceForm.reset();
     document.getElementById("aDate").valueAsDate = new Date();
     document.getElementById("detailWorkerId").value = workerId;
@@ -240,7 +251,25 @@ copyLinkBtn?.addEventListener("click", async () => {
   }
 });
 
-// === BOTÓN WHATSAPP ===
+// === BOTÓN WHATSAPP DEL ADELANTO ===
+advanceWhatsappBtn?.addEventListener("click", () => {
+  if (!currentWorkerPhone) {
+    showMessage(advanceFormMessage, "Este trabajador no tiene número de celular.", "error");
+    return;
+  }
+
+  if (!lastAdvance) {
+    showMessage(advanceFormMessage, "Primero guarda un adelanto.", "error");
+    return;
+  }
+
+  const link = getWorkerLink();
+  const text = `Hola ${detailName.textContent}, se ha registrado un nuevo adelanto en tu cuenta.\n\nFecha: ${formatDate(lastAdvance.date)}\nConcepto: ${lastAdvance.concept}\nValor: $${formatMoney(lastAdvance.amount)}\n\nPuedes ver tu cuenta aquí: ${link}`;
+  const waLink = `https://wa.me/${currentWorkerPhone}?text=${encodeURIComponent(text)}`;
+  window.open(waLink, "_blank");
+});
+
+// === BOTÓN WHATSAPP DE REGISTRO ===
 whatsappBtn?.addEventListener("click", () => {
   if (!currentWorkerPhone) {
     showMessage(advanceFormMessage, "Este trabajador no tiene número de celular.", "error");
