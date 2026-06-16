@@ -2,15 +2,34 @@
 
 Aplicación web para llevar el control de adelantos del personal de una finca.
 
-- El **administrador** registra trabajadores y sus adelantos por fecha, valor y concepto.
-- Cada **trabajador** puede iniciar sesión y ver únicamente su propio saldo e historial.
+- El **administrador** inicia sesión con Firebase Auth, registra trabajadores y sus adelantos por fecha, valor y concepto.
+- Cada **trabajador** inicia sesión con un usuario y contraseña creados por el administrador, y ve únicamente su propio saldo e historial.
 
 ## Tecnologías
 
 - HTML5 + CSS3 + JavaScript vanilla
-- Firebase Authentication (login seguro)
+- Firebase Authentication (solo para el administrador)
 - Firebase Firestore (base de datos en la nube)
 - Firebase Hosting (opcional, para publicar la app)
+
+## Estructura del proyecto
+
+```
+Cuentas_FINCA/
+├── index.html              # Página de inicio de sesión (admin y trabajador)
+├── admin.html              # Panel del administrador
+├── worker.html             # Panel del trabajador
+├── css/
+│   └── styles.css          # Estilos
+├── js/
+│   ├── firebase-config.js  # Configuración de Firebase (tú la completas)
+│   ├── auth.js             # Login, hash de contraseñas y redirecciones
+│   ├── admin.js            # Lógica del administrador
+│   └── worker.js           # Lógica del trabajador
+├── firestore.rules         # Reglas de seguridad de Firestore
+├── firebase.json           # Configuración de Firebase Hosting
+└── README.md               # Este archivo
+```
 
 ## Estructura de datos en Firestore
 
@@ -18,39 +37,24 @@ Aplicación web para llevar el control de adelantos del personal de una finca.
 users/{uid}
   - email
   - name
-  - role: "admin" | "worker"
+  - role: "admin"
 
-workers/{uid}
+workers/{workerId}
   - name
-  - phone
+  - username
+  - passwordHash    ← hash SHA-256 de la contraseña
+  - phone           ← número para WhatsApp
   - notes
-  - userId  ← mismo UID del usuario
+  - createdAt
+  - createdBy       ← UID del admin
 
 advances/{advanceId}
   - workerId
-  - userId   ← para que el trabajador pueda leer solo los suyos
   - date
   - amount
   - concept
-```
-
-## Estructura del proyecto
-
-```
-Cuentas_FINCA/
-├── public/
-│   ├── index.html              # Página de inicio de sesión
-│   ├── admin.html              # Panel del administrador
-│   ├── worker.html             # Panel del trabajador
-│   ├── css/styles.css          # Estilos
-│   └── js/
-│       ├── firebase-config.js  # Configuración de Firebase (tú la completas)
-│       ├── auth.js             # Login, roles y redirecciones
-│       ├── admin.js            # Lógica del administrador
-│       └── worker.js           # Lógica del trabajador
-├── firestore.rules             # Reglas de seguridad de Firestore
-├── firebase.json               # Configuración de Firebase Hosting
-└── README.md                   # Este archivo
+  - createdAt
+  - createdBy       ← UID del admin
 ```
 
 ## Configuración paso a paso
@@ -64,7 +68,7 @@ Cuentas_FINCA/
 
 ### 2. Configurar Firebase en la app
 
-Abre `public/js/firebase-config.js` y reemplaza los valores de ejemplo por los de tu proyecto:
+Abre `js/firebase-config.js` y reemplaza los valores de ejemplo por los de tu proyecto:
 
 ```js
 const firebaseConfig = {
@@ -77,7 +81,7 @@ const firebaseConfig = {
 };
 ```
 
-### 3. Habilitar Authentication
+### 3. Habilitar Authentication (solo para admin)
 
 1. En Firebase Console, ve a **Build > Authentication**.
 2. Haz clic en **Get started**.
@@ -86,12 +90,10 @@ const firebaseConfig = {
 
 ### 4. Crear el primer administrador
 
-Este paso se hace manualmente porque no se permite crear usuarios desde la app por seguridad.
-
 1. Ve a **Authentication > Users**.
 2. Haz clic en **Add user**.
 3. Ingresa el correo y la contraseña del administrador.
-4. Guarda. Firebase generará un **UID** (un identificador único).
+4. Guarda. Firebase generará un **UID**.
 5. Ve a **Firestore Database > Data**.
 6. Crea una colección llamada `users` y un documento con el UID del admin.
 7. Dentro del documento agrega estos campos:
@@ -104,33 +106,56 @@ role: "admin"
 
 El campo `role` debe ser exactamente `"admin"`.
 
-### 5. Subir reglas de seguridad
+### 5. Crear índice en Firestore
+
+El login de los trabajadores usa una consulta que compara `username` y `passwordHash`. La primera vez que un trabajador intente iniciar sesión, Firebase pedirá crear un índice compuesto.
+
+1. Abre la consola del navegador (F12) cuando intentes iniciar sesión como trabajador.
+2. Busca el enlace que Firebase te da para crear el índice.
+3. Haz clic en él y luego en **Create index**.
+
+O créalo manualmente en **Firestore Database > Indexes > Composite indexes** con:
+- Colección: `workers`
+- Campos: `username` (Ascending), `passwordHash` (Ascending)
+
+### 6. Subir reglas de seguridad
 
 1. Ve a **Firestore Database > Rules**.
 2. Copia el contenido de `firestore.rules` de este proyecto.
 3. Publica las reglas.
 
-### 6. Crear trabajadores
-
-1. El administrador inicia sesión en la app con su correo y contraseña.
-2. En Firebase Console, va a **Authentication > Users > Add user** y crea el usuario del trabajador (correo y contraseña).
-3. Copia el UID generado.
-4. En la app, hace clic en **+ Nuevo trabajador**, pega el UID, completa el nombre, correo y demás datos, y guarda.
-5. Listo. El trabajador ya puede iniciar sesión y ver solo sus adelantos.
-
 ## Uso de la app
 
-### Administrador
-- Ve el listado de todos los trabajadores con su saldo total.
-- Hace clic en un trabajador para ver su historial de adelantos.
-- Agrega nuevos adelantos indicando fecha, valor y concepto.
-- Vincula nuevos trabajadores creados previamente en Firebase Console.
+### Iniciar sesión como administrador
 
-### Trabajador
-- Inicia sesión con el correo y contraseña asignados por el administrador.
-- Ve su saldo total acumulado.
-- Ve el historial de adelantos ordenado por fecha.
-- No puede editar ni agregar información.
+1. Abre la app y selecciona **"Soy administrador"**.
+2. Ingresa tu correo y contraseña de Firebase.
+3. Haz clic en **Iniciar sesión**.
+
+### Crear un trabajador
+
+1. En el panel de administración, haz clic en **+ Nuevo trabajador**.
+2. Completa:
+   - **Nombre completo**
+   - **Usuario** (único, el trabajador lo usará para iniciar sesión)
+   - **Contraseña**
+   - **Número de celular** (para WhatsApp, incluye código de país sin `+` ni espacios, ejemplo: `573001234567`)
+   - **Notas** (opcional)
+3. Haz clic en **Crear trabajador**.
+4. Para avisarle, haz clic en **📱 Avisar por WhatsApp**. Esto abrirá WhatsApp con un mensaje pre-escrito que incluye el usuario y el enlace de la app.
+
+### Registrar adelantos
+
+1. En el listado de trabajadores, haz clic en el trabajador.
+2. En el panel de detalle, ingresa la **fecha**, el **valor** y el **concepto**.
+3. Haz clic en **Guardar adelanto**.
+
+### Iniciar sesión como trabajador
+
+1. Abre la app y selecciona **"Soy trabajador"**.
+2. Ingresa el **usuario** y la **contraseña** que le dio el administrador.
+3. Haz clic en **Iniciar sesión**.
+4. El trabajador verá su saldo total y el historial de sus adelantos.
 
 ## Despliegue opcional con Firebase Hosting
 
@@ -146,16 +171,33 @@ Si quieres publicar la app en internet:
    ```
 3. Selecciona el proyecto:
    ```bash
-   firebase init
+   firebase init hosting
    ```
+   - Selecciona tu proyecto de Firebase.
+   - Cuando pregunte por el directorio público, escribe `.` (punto, que significa raíz).
+   - Configúrala como SPA: **Yes**.
 4. Despliega:
    ```bash
    firebase deploy
    ```
 
+## Despliegue con GitHub Pages
+
+Los archivos de la app ya están en la raíz del repositorio para que GitHub Pages pueda servirlos.
+
+1. Ve a tu repositorio en GitHub.
+2. Entra a **Settings > Pages**.
+3. En **Source** selecciona **Deploy from a branch**.
+4. Selecciona la rama `main` y la carpeta `/ (root)`.
+5. Guarda y espera unos minutos. GitHub te dará la URL de la app.
+
+## Despliegue con Firebase Hosting
+
+Si más adelante prefieres usar Firebase Hosting en lugar de GitHub Pages:
+
 ## Notas de seguridad
 
-- Las contraseñas nunca se guardan en Firestore; se manejan mediante Firebase Authentication.
-- Los trabajadores solo pueden leer sus propios datos gracias a las reglas de seguridad.
-- Solo los administradores pueden escribir en las colecciones `users`, `workers` y `advances`.
-- No se permite crear usuarios desde la app para evitar exposición de la API key o problemas de sesión.
+- **Solo el administrador usa Firebase Authentication.**
+- **Las contraseñas de los trabajadores se guardan hasheadas** con SHA-256 en Firestore, nunca en texto plano.
+- **Las colecciones `workers` y `advances` tienen lectura pública** porque los trabajadores no tienen sesión de Firebase. Cualquiera con el enlace de la app podría ver los datos. Si necesitas más privacidad en el futuro, se recomienda volver a usar Firebase Authentication para todos los usuarios.
+- **Solo el administrador puede escribir** en `workers` y `advances` gracias a las reglas de seguridad.

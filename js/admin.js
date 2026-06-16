@@ -1,4 +1,4 @@
-import { auth, db, logoutUser } from "./auth.js";
+import { auth, db, logoutUser, hashPassword } from "./auth.js";
 import {
   collection,
   query,
@@ -51,11 +51,11 @@ function loadWorkers() {
       li.innerHTML = `
         <div>
           <div class="worker-name">${escapeHtml(worker.name)}</div>
-          <div style="font-size:0.85rem; color:#666;">${escapeHtml(worker.phone || "Sin teléfono")}</div>
+          <div style="font-size:0.85rem; color:#666;">@${escapeHtml(worker.username || "")}</div>
         </div>
         <div class="worker-balance">$${formatMoney(balance)}</div>
       `;
-      li.addEventListener("click", () => openDetailModal(workerId, worker.name, balance));
+      li.addEventListener("click", () => openDetailModal(workerId, worker.name, balance, worker.phone, worker.username));
       workerList.appendChild(li);
     }
   }, (error) => {
@@ -99,46 +99,41 @@ workerForm?.addEventListener("submit", async (e) => {
   }
 
   const name = document.getElementById("wName").value.trim();
-  const uid = document.getElementById("wUid").value.trim();
-  const email = document.getElementById("wEmail").value.trim();
+  const username = document.getElementById("wUsername").value.trim().toLowerCase();
+  const password = document.getElementById("wPassword").value;
   const phone = document.getElementById("wPhone").value.trim();
   const notes = document.getElementById("wNotes").value.trim();
 
-  if (!uid) {
-    showMessage(workerFormMessage, "Debes ingresar el UID del usuario.", "error");
+  if (!name || !username || !password || !phone) {
+    showMessage(workerFormMessage, "Completa todos los campos obligatorios.", "error");
     return;
   }
 
   try {
-    showMessage(workerFormMessage, "Vinculando trabajador...", "info");
+    showMessage(workerFormMessage, "Guardando trabajador...", "info");
 
-    // Verificar que no exista ya
-    const existingWorker = await getDoc(doc(db, "workers", uid));
-    if (existingWorker.exists()) {
-      showMessage(workerFormMessage, "Ya existe un trabajador vinculado a ese UID.", "error");
+    // Verificar que el usuario no exista
+    const usernameQuery = query(collection(db, "workers"), where("username", "==", username));
+    const usernameSnap = await getDocs(usernameQuery);
+    if (!usernameSnap.empty) {
+      showMessage(workerFormMessage, "Ese nombre de usuario ya está en uso.", "error");
       return;
     }
 
-    // Guardar documento de usuario con rol worker
-    await setDoc(doc(db, "users", uid), {
-      email,
-      name,
-      role: "worker",
-      createdAt: serverTimestamp(),
-      createdBy: adminUser.uid
-    });
+    const passwordHash = await hashPassword(password);
+    const workerId = doc(collection(db, "workers")).id;
 
-    // Crear documento del trabajador
-    await setDoc(doc(db, "workers", uid), {
+    await setDoc(doc(db, "workers", workerId), {
       name,
+      username,
+      passwordHash,
       phone,
       notes,
-      userId: uid,
       createdAt: serverTimestamp(),
       createdBy: adminUser.uid
     });
 
-    showMessage(workerFormMessage, "Trabajador vinculado correctamente.", "success");
+    showMessage(workerFormMessage, "Trabajador creado correctamente.", "success");
     workerForm.reset();
   } catch (error) {
     showMessage(workerFormMessage, "Error: " + error.message, "error");
@@ -153,14 +148,19 @@ const detailWorkerId = document.getElementById("detailWorkerId");
 const advanceForm = document.getElementById("advanceForm");
 const advanceFormMessage = document.getElementById("advanceFormMessage");
 const advancesTable = document.getElementById("advancesTable");
+const whatsappBtn = document.getElementById("whatsappBtn");
 
 let currentDetailUnsubscribe = null;
+let currentWorkerPhone = "";
+let currentWorkerUsername = "";
 
-window.openDetailModal = async function(workerId, name, balance) {
+window.openDetailModal = async function(workerId, name, balance, phone, username) {
   detailModal.classList.add("active");
   detailName.textContent = name;
   detailBalance.textContent = "$" + formatMoney(balance);
   detailWorkerId.value = workerId;
+  currentWorkerPhone = phone || "";
+  currentWorkerUsername = username || "";
 
   // Fecha por defecto: hoy
   document.getElementById("aDate").valueAsDate = new Date();
@@ -204,6 +204,8 @@ window.closeDetailModal = function() {
   detailModal.classList.remove("active");
   advanceForm?.reset();
   hideMessage(advanceFormMessage);
+  currentWorkerPhone = "";
+  currentWorkerUsername = "";
   if (currentDetailUnsubscribe) {
     currentDetailUnsubscribe();
     currentDetailUnsubscribe = null;
@@ -225,7 +227,6 @@ advanceForm?.addEventListener("submit", async (e) => {
   try {
     await addDoc(collection(db, "advances"), {
       workerId,
-      userId: workerId,
       date,
       amount,
       concept,
@@ -239,6 +240,19 @@ advanceForm?.addEventListener("submit", async (e) => {
   } catch (error) {
     showMessage(advanceFormMessage, "Error guardando adelanto: " + error.message, "error");
   }
+});
+
+// === BOTÓN WHATSAPP ===
+whatsappBtn?.addEventListener("click", () => {
+  if (!currentWorkerPhone) {
+    showMessage(advanceFormMessage, "Este trabajador no tiene número de celular.", "error");
+    return;
+  }
+
+  const url = window.location.origin + window.location.pathname.replace("admin.html", "index.html");
+  const text = `Hola ${detailName.textContent}, tu cuenta en Cuentas FINCA ha sido creada.\n\nUsuario: ${currentWorkerUsername}\nIngresa aquí: ${url}\n\nEl administrador te dará la contraseña.`;
+  const waLink = `https://wa.me/${currentWorkerPhone}?text=${encodeURIComponent(text)}`;
+  window.open(waLink, "_blank");
 });
 
 // === UTILIDADES ===

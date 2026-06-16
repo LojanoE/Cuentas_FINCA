@@ -7,32 +7,27 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Función: ¿es el mismo usuario?
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
-    }
-
     // Función: ¿es administrador?
     function isAdmin() {
       return isAuthenticated() && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
     }
 
-    // Colección users: cada uno lee su propio documento, el admin lee/escribe todos
+    // Colección users: solo el admin puede leer/escribir
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow write: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
-    // Colección workers: el trabajador lee el suyo, el admin todo
+    // Colección workers: lectura pública (los trabajadores no usan Firebase Auth),
+    // escritura solo para el administrador.
     match /workers/{workerId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Colección advances: el trabajador lee los suyos por userId, el admin todo, solo admin escribe
+    // Colección advances: lectura pública, escritura solo admin.
     match /advances/{advanceId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow read: if true;
       allow write: if isAdmin();
     }
   }
