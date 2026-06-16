@@ -1,18 +1,17 @@
 // CONFIGURACIÓN DE FIREBASE
-// Reemplaza estos valores con los de tu proyecto en Firebase Console
-// (Configuración del proyecto > Tu aplicación > SDK de Firebase)
+// Proyecto: cuentas-finca-sl
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  storageBucket: "TU_STORAGE_BUCKET",
-  messagingSenderId: "TU_MESSAGING_SENDER_ID",
-  appId: "TU_APP_ID"
+  apiKey: "AIzaSyA5zNyjtQwt9T0tGP7bX7_J8P0R39oa9Hc",
+  authDomain: "cuentas-finca-sl.firebaseapp.com",
+  projectId: "cuentas-finca-sl",
+  storageBucket: "cuentas-finca-sl.firebasestorage.app",
+  messagingSenderId: "6851617129",
+  appId: "1:6851617129:web:a81458bdea66ca92661df8"
 };
 
 const app = initializeApp(firebaseConfig);
