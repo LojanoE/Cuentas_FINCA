@@ -128,6 +128,7 @@ const advancesTable = document.getElementById("advancesTable");
 const whatsappBtn = document.getElementById("whatsappBtn");
 
 let currentDetailUnsubscribe = null;
+let currentWorkerId = "";
 let currentWorkerPhone = "";
 
 window.openDetailModal = async function(workerId, name, balance, phone) {
@@ -135,6 +136,7 @@ window.openDetailModal = async function(workerId, name, balance, phone) {
   detailName.textContent = name;
   detailBalance.textContent = "$" + formatMoney(balance);
   detailWorkerId.value = workerId;
+  currentWorkerId = workerId;
   currentWorkerPhone = phone || "";
 
   // Fecha por defecto: hoy
@@ -179,6 +181,7 @@ window.closeDetailModal = function() {
   detailModal.classList.remove("active");
   advanceForm?.reset();
   hideMessage(advanceFormMessage);
+  currentWorkerId = "";
   currentWorkerPhone = "";
   if (currentDetailUnsubscribe) {
     currentDetailUnsubscribe();
@@ -215,6 +218,28 @@ advanceForm?.addEventListener("submit", async (e) => {
   }
 });
 
+function getWorkerLink() {
+  if (!currentWorkerId) return "";
+  return `${window.location.origin}${window.location.pathname.replace("admin.html", "worker.html")}?id=${currentWorkerId}`;
+}
+
+// === BOTÓN COPIAR ENLACE ===
+const copyLinkBtn = document.getElementById("copyLinkBtn");
+copyLinkBtn?.addEventListener("click", async () => {
+  const link = getWorkerLink();
+  if (!link) {
+    showMessage(advanceFormMessage, "No hay trabajador seleccionado.", "error");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(link);
+    showMessage(advanceFormMessage, "Enlace copiado al portapapeles.", "success");
+  } catch (error) {
+    showMessage(advanceFormMessage, "No se pudo copiar automáticamente. Enlace: " + link, "info");
+  }
+});
+
 // === BOTÓN WHATSAPP ===
 whatsappBtn?.addEventListener("click", () => {
   if (!currentWorkerPhone) {
@@ -222,8 +247,8 @@ whatsappBtn?.addEventListener("click", () => {
     return;
   }
 
-  const url = window.location.origin + window.location.pathname.replace("admin.html", "index.html");
-  const text = `Hola ${detailName.textContent}, tu registro en Cuentas FINCA ha sido creado.\n\nPuedes consultar tu cuenta aquí: ${url}`;
+  const link = getWorkerLink();
+  const text = `Hola ${detailName.textContent}, tu registro en Cuentas FINCA ha sido creado.\n\nPuedes consultar tu cuenta aquí: ${link}`;
   const waLink = `https://wa.me/${currentWorkerPhone}?text=${encodeURIComponent(text)}`;
   window.open(waLink, "_blank");
 });

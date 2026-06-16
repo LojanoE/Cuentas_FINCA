@@ -5,7 +5,8 @@ Aplicación web simple para llevar el control de adelantos del personal de una f
 - Solo hay **un administrador**.
 - La contraseña de administrador es: **`Mirador1`**
 - El administrador puede registrar trabajadores, sus números de celular y los adelantos por fecha, valor y concepto.
-- Puede enviar un mensaje por WhatsApp avisando al trabajador.
+- Cada trabajador tiene un **enlace único** para ver su cuenta.
+- El admin puede enviar el enlace por WhatsApp.
 
 ## Tecnologías
 
@@ -57,7 +58,18 @@ service cloud.firestore {
 2. Ingresa la contraseña: **`Mirador1`**
 3. Crea trabajadores con nombre y número de celular.
 4. Haz clic en un trabajador para ver su cuenta y agregar adelantos.
-5. Usa el botón **📱 Avisar por WhatsApp** para enviar el aviso.
+5. Usa el botón **🔗 Copiar enlace del trabajador** para copiar su enlace único.
+6. Usa el botón **📱 Avisar por WhatsApp** para enviar el aviso con el enlace.
+
+### Enlace del trabajador
+
+Cada trabajador accede con un enlace como este:
+
+```
+https://lojanoe.github.io/Cuentas_FINCA/worker.html?id=WORKER_ID
+```
+
+Reemplaza `WORKER_ID` por el ID del documento del trabajador en Firestore, o usa el botón de copiar enlace en el panel de administración.
 
 ## Estructura de datos
 

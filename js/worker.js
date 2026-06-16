@@ -1,4 +1,4 @@
-import { db, logoutUser } from "./auth.js";
+import { db } from "./firebase-config.js";
 import {
   collection,
   query,
@@ -14,42 +14,26 @@ const workerBalance = document.getElementById("workerBalance");
 const advancesTable = document.getElementById("advancesTable");
 const workerMessage = document.getElementById("workerMessage");
 
-document.getElementById("logoutBtn")?.addEventListener("click", logoutUser);
-
 let currentUnsubscribe = null;
 
-function checkWorkerSession() {
-  const workerId = sessionStorage.getItem("workerId");
-  const isWorker = sessionStorage.getItem("isWorker");
-
-  if (!workerId || isWorker !== "true") {
-    window.location.href = "index.html";
-    return null;
-  }
-
-  return workerId;
+function getWorkerIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
 }
 
 async function loadWorkerData(workerId) {
-  if (workerName) {
-    const storedName = sessionStorage.getItem("workerName");
-    workerName.textContent = storedName || "Trabajador";
-  }
-
   try {
-    // Verificar que el trabajador exista
     const workerRef = doc(db, "workers", workerId);
     const workerSnap = await getDoc(workerRef);
 
     if (!workerSnap.exists()) {
-      showMessage("No se encontró información del trabajador.", "error");
+      showMessage("Trabajador no encontrado.", "error");
       return;
     }
 
     const worker = workerSnap.data();
     if (workerName) workerName.textContent = worker.name || "Trabajador";
 
-    // Escuchar adelantos en tiempo real
     if (currentUnsubscribe) currentUnsubscribe();
 
     const advancesQuery = query(
@@ -88,9 +72,11 @@ async function loadWorkerData(workerId) {
 }
 
 // Iniciar
-const workerId = checkWorkerSession();
+const workerId = getWorkerIdFromUrl();
 if (workerId) {
   loadWorkerData(workerId);
+} else {
+  showMessage("Enlace inválido. Falta el identificador del trabajador.", "error");
 }
 
 function formatMoney(value) {

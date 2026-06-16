@@ -2,10 +2,42 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=index.html">
-  <title>Cuentas FINCA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mis Cuentas - FINCA</title>
+  <link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
-  <p>Redirigiendo...</p>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>🏡 Mis Cuentas</h1>
+        <div class="user-info">Hola, <span id="workerName">...</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <h2>Saldo total de adelantos</h2>
+      <div id="workerBalance" class="balance-big">$0</div>
+    </div>
+
+    <div class="card">
+      <h2>Historial de adelantos</h2>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Concepto</th>
+              <th class="text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="advancesTable"></tbody>
+        </table>
+      </div>
+      <div id="workerMessage" class="message hidden"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/worker.js?v=4"></script>
 </body>
 </html>
