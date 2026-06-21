@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Cuentas FINCA</title>
-  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/styles.css?v=6">
 </head>
 <body>
   <div class="container">
@@ -19,10 +19,56 @@
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <h2>Trabajadores</h2>
-        <button id="openWorkerModal" class="btn btn-primary">+ Nuevo trabajador</button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button id="openWorkerModal" class="btn btn-primary">+ Nuevo trabajador</button>
+          <button id="openResetModal" class="btn btn-danger">🗑️ Restablecer todo</button>
+        </div>
       </div>
       <ul id="workerList" class="worker-list"></ul>
       <div id="workerMessage" class="message hidden"></div>
+    </div>
+
+    <!-- Reporte de adelantos -->
+    <div class="card">
+      <h2>📊 Reporte de adelantos</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+        <div class="form-group">
+          <label for="reportWorker">Trabajador</label>
+          <select id="reportWorker">
+            <option value="">Todos los trabajadores</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="reportDateFrom">Desde</label>
+          <input type="date" id="reportDateFrom">
+        </div>
+        <div class="form-group">
+          <label for="reportDateTo">Hasta</label>
+          <input type="date" id="reportDateTo">
+        </div>
+      </div>
+      <button id="reportFilterBtn" class="btn btn-primary">Filtrar</button>
+      <div id="reportMessage" class="message hidden"></div>
+
+      <div class="table-responsive" style="margin-top: 20px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Trabajador</th>
+              <th>Fecha</th>
+              <th>Concepto</th>
+              <th class="text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="reportTable"></tbody>
+          <tfoot>
+            <tr style="font-weight:700; background:#f0f0f0;">
+              <td colspan="3">Total</td>
+              <td class="text-right" id="reportTotal">$0</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -66,6 +112,7 @@
       <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
         <button id="copyLinkBtn" class="btn btn-primary btn-small">🔗 Copiar enlace del trabajador</button>
         <button id="whatsappBtn" class="btn btn-primary btn-small">📱 Avisar por WhatsApp</button>
+        <button id="deleteWorkerBtn" class="btn btn-danger btn-small">🗑️ Eliminar trabajador</button>
       </div>
 
       <h3>Agregar adelanto</h3>
@@ -109,6 +156,23 @@
     </div>
   </div>
 
-  <script type="module" src="js/admin.js?v=4"></script>
+  <!-- Modal: Confirmar restablecer todo -->
+  <div id="resetModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>¿Restablecer todo?</h2>
+        <button class="close-btn" onclick="closeResetModal()">&times;</button>
+      </div>
+      <p>Esta acción eliminará <strong>todos los trabajadores y todos los adelantos</strong>. No se puede deshacer.</p>
+      <p>Para confirmar, escribe <strong>ELIMINAR</strong> en el campo de abajo:</p>
+      <div class="form-group">
+        <input type="text" id="resetConfirmInput" placeholder="ELIMINAR">
+      </div>
+      <button id="resetAllBtn" class="btn btn-danger btn-block">Sí, eliminar todo</button>
+      <div id="resetMessage" class="message hidden"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/admin.js?v=6"></script>
 </body>
 </html>

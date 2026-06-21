@@ -8,6 +8,7 @@ import {
   addDoc,
   doc,
   setDoc,
+  deleteDoc,
   onSnapshot,
   serverTimestamp,
   orderBy
@@ -24,6 +25,9 @@ document.getElementById("logoutBtn")?.addEventListener("click", logoutUser);
 // === LISTA DE TRABAJADORES ===
 const workerList = document.getElementById("workerList");
 const workerMessage = document.getElementById("workerMessage");
+const reportWorker = document.getElementById("reportWorker");
+
+const workerMap = new Map();
 
 function loadWorkers() {
   if (!workerList) return;
@@ -32,6 +36,12 @@ function loadWorkers() {
 
   onSnapshot(workersQuery, async (snapshot) => {
     workerList.innerHTML = "";
+    workerMap.clear();
+
+    // Mantener opción por defecto del filtro
+    if (reportWorker) {
+      reportWorker.innerHTML = '<option value="">Todos los trabajadores</option>';
+    }
 
     if (snapshot.empty) {
       workerList.innerHTML = "<li class='worker-item'>No hay trabajadores registrados.</li>";
@@ -41,19 +51,39 @@ function loadWorkers() {
     for (const docSnap of snapshot.docs) {
       const worker = docSnap.data();
       const workerId = docSnap.id;
+      workerMap.set(workerId, worker);
+
       const balance = await getWorkerBalance(workerId);
 
       const li = document.createElement("li");
       li.className = "worker-item";
       li.innerHTML = `
-        <div>
+        <div style="flex:1; min-width:0;">
           <div class="worker-name">${escapeHtml(worker.name)}</div>
           <div style="font-size:0.85rem; color:#666;">${escapeHtml(worker.phone || "Sin teléfono")}</div>
         </div>
-        <div class="worker-balance">$${formatMoney(balance)}</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div class="worker-balance">$${formatMoney(balance)}</div>
+          <button class="btn btn-danger btn-small delete-worker-btn" data-id="${escapeHtml(workerId)}" title="Eliminar trabajador">🗑️</button>
+        </div>
       `;
-      li.addEventListener("click", () => openDetailModal(workerId, worker.name, balance, worker.phone));
+      li.addEventListener("click", (e) => {
+        if (e.target.closest(".delete-worker-btn")) return;
+        openDetailModal(workerId, worker.name, balance, worker.phone);
+      });
+      li.querySelector(".delete-worker-btn")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteWorker(workerId, worker.name);
+      });
       workerList.appendChild(li);
+
+      // Llenar select del reporte
+      if (reportWorker) {
+        const option = document.createElement("option");
+        option.value = workerId;
+        option.textContent = worker.name;
+        reportWorker.appendChild(option);
+      }
     }
   }, (error) => {
     showMessage(workerMessage, "Error cargando trabajadores: " + error.message, "error");
@@ -68,6 +98,111 @@ async function getWorkerBalance(workerId) {
     total += Number(docSnap.data().amount) || 0;
   });
   return total;
+}
+
+// === REPORTE DE ADELANTOS ===
+const reportFilterBtn = document.getElementById("reportFilterBtn");
+const reportDateFrom = document.getElementById("reportDateFrom");
+const reportDateTo = document.getElementById("reportDateTo");
+const reportTable = document.getElementById("reportTable");
+const reportTotal = document.getElementById("reportTotal");
+const reportMessage = document.getElementById("reportMessage");
+
+async function loadReport() {
+  if (!reportTable || !reportTotal) return;
+
+  const workerId = reportWorker?.value || "";
+  const dateFrom = reportDateFrom?.value || "";
+  const dateTo = reportDateTo?.value || "";
+
+  reportTable.innerHTML = "";
+  reportTotal.textContent = "$0";
+  hideMessage(reportMessage);
+
+  try {
+    let advancesQuery;
+
+    if (workerId) {
+      // Filtrar por trabajador; ordenamos en memoria para no requerir otro índice compuesto
+      advancesQuery = query(collection(db, "advances"), where("workerId", "==", workerId));
+    } else {
+      // Todos los adelantos ordenados por fecha
+      advancesQuery = query(collection(db, "advances"), orderBy("date", "desc"));
+    }
+
+    const snapshot = await getDocs(advancesQuery);
+    const rows = [];
+
+    snapshot.forEach((docSnap) => {
+      const a = docSnap.data();
+
+      // Filtro por rango de fechas (client-side)
+      if (dateFrom && a.date < dateFrom) return;
+      if (dateTo && a.date > dateTo) return;
+
+      const worker = workerMap.get(a.workerId) || { name: "Desconocido" };
+      rows.push({
+        name: worker.name,
+        date: a.date,
+        concept: a.concept,
+        amount: Number(a.amount) || 0
+      });
+    });
+
+    // Ordenar por fecha descendente
+    rows.sort((a, b) => b.date.localeCompare(a.date));
+
+    let total = 0;
+
+    if (rows.length === 0) {
+      reportTable.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No hay adelantos para los filtros seleccionados.</td></tr>";
+    } else {
+      rows.forEach((row) => {
+        total += row.amount;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(row.name)}</td>
+          <td>${formatDate(row.date)}</td>
+          <td>${escapeHtml(row.concept)}</td>
+          <td class="text-right">$${formatMoney(row.amount)}</td>
+        `;
+        reportTable.appendChild(tr);
+      });
+    }
+
+    reportTotal.textContent = "$" + formatMoney(total);
+  } catch (error) {
+    showMessage(reportMessage, "Error cargando reporte: " + error.message, "error");
+  }
+}
+
+reportFilterBtn?.addEventListener("click", loadReport);
+
+async function deleteWorkerAdvances(workerId) {
+  const q = query(collection(db, "advances"), where("workerId", "==", workerId));
+  const snapshot = await getDocs(q);
+  const deletes = [];
+  snapshot.forEach((docSnap) => {
+    deletes.push(deleteDoc(doc(db, "advances", docSnap.id)));
+  });
+  await Promise.all(deletes);
+}
+
+async function deleteWorker(workerId, workerName) {
+  const confirmed = confirm(`¿Eliminar a ${workerName || "este trabajador"}?\n\nSe borrarán también todos sus adelantos. Esta acción no se puede deshacer.`);
+  if (!confirmed) return;
+
+  try {
+    showMessage(workerMessage, "Eliminando trabajador...", "info");
+    await deleteWorkerAdvances(workerId);
+    await deleteDoc(doc(db, "workers", workerId));
+    showMessage(workerMessage, "Trabajador eliminado correctamente.", "success");
+    if (currentWorkerId === workerId) {
+      closeDetailModal();
+    }
+  } catch (error) {
+    showMessage(workerMessage, "Error eliminando trabajador: " + error.message, "error");
+  }
 }
 
 // === MODAL NUEVO TRABAJADOR ===
@@ -126,6 +261,7 @@ const advanceForm = document.getElementById("advanceForm");
 const advanceFormMessage = document.getElementById("advanceFormMessage");
 const advancesTable = document.getElementById("advancesTable");
 const whatsappBtn = document.getElementById("whatsappBtn");
+const deleteWorkerBtn = document.getElementById("deleteWorkerBtn");
 const advanceWhatsappContainer = document.getElementById("advanceWhatsappContainer");
 const advanceWhatsappBtn = document.getElementById("advanceWhatsappBtn");
 
@@ -280,6 +416,61 @@ whatsappBtn?.addEventListener("click", () => {
   const text = `Hola ${detailName.textContent}, tu registro en Cuentas FINCA ha sido creado.\n\nPuedes consultar tu cuenta aquí: ${link}`;
   const waLink = `https://wa.me/${currentWorkerPhone}?text=${encodeURIComponent(text)}`;
   window.open(waLink, "_blank");
+});
+
+deleteWorkerBtn?.addEventListener("click", () => {
+  if (!currentWorkerId) return;
+  deleteWorker(currentWorkerId, detailName.textContent);
+});
+
+// === MODAL RESTABLECER TODO ===
+const resetModal = document.getElementById("resetModal");
+const openResetModalBtn = document.getElementById("openResetModal");
+const resetAllBtn = document.getElementById("resetAllBtn");
+const resetConfirmInput = document.getElementById("resetConfirmInput");
+const resetMessage = document.getElementById("resetMessage");
+
+openResetModalBtn?.addEventListener("click", () => {
+  resetModal.classList.add("active");
+  resetConfirmInput?.focus();
+});
+
+window.closeResetModal = function() {
+  resetModal.classList.remove("active");
+  resetConfirmInput.value = "";
+  hideMessage(resetMessage);
+};
+
+async function deleteAllDocuments(collectionName) {
+  const snapshot = await getDocs(collection(db, collectionName));
+  const deletes = [];
+  snapshot.forEach((docSnap) => {
+    deletes.push(deleteDoc(doc(db, collectionName, docSnap.id)));
+  });
+  return Promise.all(deletes);
+}
+
+resetAllBtn?.addEventListener("click", async () => {
+  if (resetConfirmInput.value.trim() !== "ELIMINAR") {
+    showMessage(resetMessage, "Escribe ELIMINAR para confirmar.", "error");
+    return;
+  }
+
+  try {
+    resetAllBtn.disabled = true;
+    showMessage(resetMessage, "Eliminando todos los datos...", "info");
+
+    await deleteAllDocuments("advances");
+    await deleteAllDocuments("workers");
+
+    closeDetailModal();
+    showMessage(resetMessage, "Todos los datos han sido eliminados.", "success");
+    setTimeout(() => closeResetModal(), 1500);
+  } catch (error) {
+    showMessage(resetMessage, "Error eliminando datos: " + error.message, "error");
+  } finally {
+    resetAllBtn.disabled = false;
+  }
 });
 
 // === UTILIDADES ===
