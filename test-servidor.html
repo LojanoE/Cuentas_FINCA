@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificación de servidor - Cuentas FINCA</title>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; margin: 20px; background:#f5f5f5; }
+    h1 { color:#1b5e20; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:15px; margin-top:15px; }
+    .frame { background:#fff; border:1px solid #ddd; border-radius:10px; overflow:hidden; }
+    .frame h2 { background:#2e7d32; color:#fff; margin:0; padding:10px 14px; font-size:1rem; }
+    .frame iframe { width:100%; height:380px; border:0; background:#fff; }
+    .status { padding:6px 14px; font-size:0.85rem; }
+    .status.ok { color:#1b5e20; }
+    .status.fail { color:#c62828; }
+    code { background:#eee; padding:2px 6px; border-radius:4px; }
+    .btn { display:inline-block; padding:8px 14px; background:#2e7d32; color:#fff; border-radius:8px; text-decoration:none; }
+    .btn:hover { background:#1b5e20; }
+  </style>
+</head>
+<body>
+  <h1>🔧 Verificación del servidor local</h1>
+  <p>Servidor corriendo en <code>http://127.0.0.1:8080/</code>. Abre cada página en una pestaña nueva para probar la funcionalidad completa (los iframes son sólo para confirmar que cargan sin errores 404).</p>
+  <p>
+    <a class="btn" href="index.html" target="_blank">Abrir login</a>
+    <a class="btn" href="admin.html" target="_blank">Abrir admin</a>
+    <a class="btn" href="worker.html?id=DEMO" target="_blank">Abrir worker (demo)</a>
+    <button class="btn" onclick="recargar()">Recargar iframes</button>
+    <button class="btn" onclick="detener()" style="background:#c62828;">Detener servidor</button>
+  </p>
+  <div class="grid">
+    <div class="frame">
+      <h2>index.html (Login)</h2>
+      <iframe id="f1" src="index.html"></iframe>
+      <div id="s1" class="status">verificando…</div>
+    </div>
+    <div class="frame">
+      <h2>admin.html</h2>
+      <iframe id="f2" src="admin.html"></iframe>
+      <div id="s2" class="status">verificando…</div>
+    </div>
+    <div class="frame">
+      <h2>worker.html?id=DEMO</h2>
+      <iframe id="f3" src="worker.html?id=DEMO"></iframe>
+      <div id="s3" class="status">verificando…</div>
+    </div>
+  </div>
+
+  <script>
+    function verificar(id, url) {
+      const s = document.getElementById("s" + id);
+      fetch(url, { method: "GET" })
+        .then(r => { s.className = "status " + (r.ok ? "ok" : "fail"); s.textContent = (r.ok ? "OK" : "FALLÓ") + " — HTTP " + r.status + " — " + url; })
+        .catch(e => { s.className = "status fail"; s.textContent = "Error de red: " + e.message + " — " + url; });
+    }
+    function recargar() {
+      ["f1","f2","f3"].forEach(id => { const f = document.getElementById(id); f.src = f.src; });
+      verificar(1, "index.html");
+      verificar(2, "admin.html");
+      verificar(3, "worker.html?id=DEMO");
+    }
+    function detener() {
+      const s = document.getElementById("s1");
+      s.className = "status"; s.textContent = "Para detener el servidor, cierra esta pestaña y detén el proceso (PID 35640) desde opencode.";
+    }
+    recargar();
+  </script>
+</body>
+</html>

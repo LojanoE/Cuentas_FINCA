@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Cuentas FINCA</title>
-  <link rel="stylesheet" href="css/styles.css?v=6">
+  <link rel="stylesheet" href="css/styles.css?v=7">
 </head>
 <body>
   <div class="container">
@@ -13,7 +13,10 @@
         <h1>🏡 Cuentas FINCA</h1>
         <div class="user-info">Panel de administración</div>
       </div>
-      <button id="logoutBtn" class="btn btn-danger">Cerrar sesión</button>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="themeToggle" class="btn btn-small" aria-label="Cambiar tema">🌙</button>
+        <button id="logoutBtn" class="btn btn-danger">Cerrar sesión</button>
+      </div>
     </div>
 
     <div class="card">
@@ -24,8 +27,12 @@
           <button id="openResetModal" class="btn btn-danger">🗑️ Restablecer todo</button>
         </div>
       </div>
-      <ul id="workerList" class="worker-list"></ul>
-      <div id="workerMessage" class="message hidden"></div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label for="workerSearch">Buscar por nombre</label>
+        <input type="search" id="workerSearch" placeholder="Escribe parte del nombre..." autocomplete="off">
+      </div>
+      <ul id="workerList" class="worker-list" aria-live="polite"></ul>
+      <div id="workerMessage" class="message hidden" aria-live="polite"></div>
     </div>
 
     <!-- Reporte de adelantos -->
@@ -48,16 +55,17 @@
         </div>
       </div>
       <button id="reportFilterBtn" class="btn btn-primary">Filtrar</button>
-      <div id="reportMessage" class="message hidden"></div>
+      <button id="reportMoreBtn" class="btn btn-small hidden" style="margin-top:10px;">Cargar más</button>
+      <div id="reportMessage" class="message hidden" aria-live="polite"></div>
 
       <div class="table-responsive" style="margin-top: 20px;">
         <table>
           <thead>
             <tr>
-              <th>Trabajador</th>
-              <th>Fecha</th>
-              <th>Concepto</th>
-              <th class="text-right">Valor</th>
+              <th scope="col">Trabajador</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Concepto</th>
+              <th scope="col" class="text-right">Valor</th>
             </tr>
           </thead>
           <tbody id="reportTable"></tbody>
@@ -73,11 +81,11 @@
   </div>
 
   <!-- Modal: Nuevo trabajador -->
-  <div id="workerModal" class="modal-overlay">
+  <div id="workerModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="workerModalTitle">
     <div class="modal">
       <div class="modal-header">
-        <h2>Nuevo trabajador</h2>
-        <button class="close-btn" onclick="closeWorkerModal()">&times;</button>
+        <h2 id="workerModalTitle">Nuevo trabajador</h2>
+        <button class="close-btn" onclick="closeWorkerModal()" aria-label="Cerrar">&times;</button>
       </div>
       <form id="workerForm">
         <div class="form-group">
@@ -86,32 +94,33 @@
         </div>
         <div class="form-group">
           <label for="wPhone">Número de celular (para WhatsApp)</label>
-          <input type="tel" id="wPhone" required placeholder="Ej: 573001234567">
-          <small style="color:#666;">Incluye el código de país sin + ni espacios.</small>
+          <input type="tel" id="wPhone" required pattern="\d{8,15}" title="Entre 8 y 15 dígitos numéricos, sin + ni espacios." placeholder="Ej: 573001234567">
+          <small style="color:#666;">Incluye el código de país sin + ni espacios (8-15 dígitos).</small>
         </div>
         <div class="form-group">
           <label for="wNotes">Notas (opcional)</label>
           <textarea id="wNotes"></textarea>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Crear trabajador</button>
+        <button type="submit" class="btn btn-primary btn-block">Guardar</button>
       </form>
-      <div id="workerFormMessage" class="message hidden"></div>
+      <div id="workerFormMessage" class="message hidden" aria-live="polite"></div>
     </div>
   </div>
 
   <!-- Modal: Detalle del trabajador + adelantos -->
-  <div id="detailModal" class="modal-overlay">
+  <div id="detailModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="detailName">
     <div class="modal" style="max-width: 700px;">
       <div class="modal-header">
         <h2 id="detailName">Trabajador</h2>
-        <button class="close-btn" onclick="closeDetailModal()">&times;</button>
+        <button class="close-btn" onclick="closeDetailModal()" aria-label="Cerrar">&times;</button>
       </div>
 
       <p>Saldo total: <span id="detailBalance" class="balance-big">$0</span></p>
 
       <div class="form-group" style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button id="copyLinkBtn" class="btn btn-primary btn-small">🔗 Copiar enlace del trabajador</button>
-        <button id="whatsappBtn" class="btn btn-primary btn-small">📱 Avisar por WhatsApp</button>
+        <button id="copyLinkBtn" class="btn btn-primary btn-small">🔗 Copiar enlace</button>
+        <button id="whatsappBtn" class="btn btn-primary btn-small">📱 Avisar registro por WhatsApp</button>
+        <button id="editWorkerBtn" class="btn btn-small">✏️ Editar datos</button>
         <button id="deleteWorkerBtn" class="btn btn-danger btn-small">🗑️ Eliminar trabajador</button>
       </div>
 
@@ -134,7 +143,7 @@
         </div>
         <button type="submit" class="btn btn-primary">Guardar adelanto</button>
       </form>
-      <div id="advanceFormMessage" class="message hidden"></div>
+      <div id="advanceFormMessage" class="message hidden" aria-live="polite"></div>
 
       <div id="advanceWhatsappContainer" class="form-group hidden">
         <button id="advanceWhatsappBtn" class="btn btn-primary btn-small">📱 Avisar este adelanto por WhatsApp</button>
@@ -145,23 +154,54 @@
         <table>
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Concepto</th>
-              <th class="text-right">Valor</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Concepto</th>
+              <th scope="col" class="text-right">Valor</th>
+              <th scope="col" class="text-right">Acciones</th>
             </tr>
           </thead>
           <tbody id="advancesTable"></tbody>
         </table>
       </div>
+      <button id="loadMoreAdvancesBtn" class="btn btn-small hidden" style="margin-top:10px;">Cargar más adelantos</button>
+    </div>
+  </div>
+
+  <!-- Modal: Editar adelanto -->
+  <div id="editAdvanceModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="editAdvanceTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="editAdvanceTitle">Editar adelanto</h2>
+        <button class="close-btn" onclick="closeEditAdvanceModal()" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="editAdvanceForm">
+        <input type="hidden" id="eaId">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label for="eaDate">Fecha</label>
+            <input type="date" id="eaDate" required>
+          </div>
+          <div class="form-group">
+            <label for="eaAmount">Valor ($)</label>
+            <input type="number" id="eaAmount" required min="1" step="0.01">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="eaConcept">Concepto</label>
+          <input type="text" id="eaConcept" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Guardar cambios</button>
+      </form>
+      <div id="editAdvanceMessage" class="message hidden" aria-live="polite"></div>
     </div>
   </div>
 
   <!-- Modal: Confirmar restablecer todo -->
-  <div id="resetModal" class="modal-overlay">
+  <div id="resetModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
     <div class="modal">
       <div class="modal-header">
-        <h2>¿Restablecer todo?</h2>
-        <button class="close-btn" onclick="closeResetModal()">&times;</button>
+        <h2 id="resetTitle">¿Restablecer todo?</h2>
+        <button class="close-btn" onclick="closeResetModal()" aria-label="Cerrar">&times;</button>
       </div>
       <p>Esta acción eliminará <strong>todos los trabajadores y todos los adelantos</strong>. No se puede deshacer.</p>
       <p>Para confirmar, escribe <strong>ELIMINAR</strong> en el campo de abajo:</p>
@@ -173,6 +213,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/admin.js?v=6"></script>
+  <script type="module" src="js/admin.js?v=7"></script>
 </body>
 </html>

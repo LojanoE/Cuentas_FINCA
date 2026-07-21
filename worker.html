@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mis Cuentas - FINCA</title>
-  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body>
   <div class="container">
@@ -13,6 +13,7 @@
         <h1>🏡 Mis Cuentas</h1>
         <div class="user-info">Hola, <span id="workerName">...</span></div>
       </div>
+      <button id="themeToggle" class="btn btn-small" aria-label="Cambiar tema">🌙</button>
     </div>
 
     <div class="card" style="text-align:center;">
@@ -26,18 +27,19 @@
         <table>
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Concepto</th>
-              <th class="text-right">Valor</th>
+              <th scope="col">Fecha</th>
+              <th scope="col">Concepto</th>
+              <th scope="col" class="text-right">Valor</th>
             </tr>
           </thead>
-          <tbody id="advancesTable"></tbody>
+          <tbody id="advancesTable" aria-live="polite"></tbody>
         </table>
       </div>
-      <div id="workerMessage" class="message hidden"></div>
+      <button id="loadMoreBtn" class="btn btn-small hidden" style="margin-top:10px;">Cargar más</button>
+      <div id="workerMessage" class="message hidden" aria-live="polite"></div>
     </div>
   </div>
 
-  <script type="module" src="js/worker.js?v=4"></script>
+  <script type="module" src="js/worker.js?v=5"></script>
 </body>
 </html>

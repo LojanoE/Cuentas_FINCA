@@ -308,4 +308,96 @@ tr:hover {
     align-items: flex-start;
     gap: 8px;
   }
+  
+  .advance-actions {
+    white-space: nowrap;
+  }
+}
+
+/* Botones con spinner */
+.btn-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+.advance-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.advance-actions .btn {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+/* Modo oscuro */
+[data-theme="dark"] {
+  --primary: #66bb6a;
+  --primary-dark: #81c784;
+  --danger: #ef5350;
+  --bg: #121212;
+  --card: #1e1e1e;
+  --text: #e0e0e0;
+  --text-light: #a0a0a0;
+  --border: #333333;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+[data-theme="dark"] th {
+  background-color: #2a2a2a;
+}
+
+[data-theme="dark"] tr:hover {
+  background-color: #2a2a2a;
+}
+
+[data-theme="dark"] .message.error {
+  background-color: #4a1f1f;
+  color: #ef9a9a;
+}
+
+[data-theme="dark"] .message.info,
+[data-theme="dark"] .message.success {
+  background-color: #1f3a23;
+  color: #a5d6a7;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background-color: #2a2a2a;
+  color: var(--text);
+  border-color: #444;
+}
+
+[data-theme="dark"] .worker-item:hover {
+  background-color: #2a2a2a;
+}
+
+[data-theme="dark"] tfoot tr {
+  background-color: #2a2a2a !important;
 }

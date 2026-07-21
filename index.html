@@ -4,11 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cuentas FINCA - Administrador</title>
-  <link rel="stylesheet" href="css/styles.css?v=4">
+  <link rel="stylesheet" href="css/styles.css?v=5">
 </head>
 <body>
   <div class="container">
     <div class="card login-card">
+      <div style="display:flex; justify-content:flex-end;">
+        <button id="themeToggle" class="btn btn-small" aria-label="Cambiar tema">🌙</button>
+      </div>
       <h1>🏡 Cuentas FINCA</h1>
       <p class="subtitle">Panel de administración</p>
 
@@ -17,13 +20,21 @@
           <label for="adminPassword">Contraseña de administrador</label>
           <input type="password" id="adminPassword" required placeholder="••••••••">
         </div>
+        <div class="form-group" style="text-align:left; display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="rememberMe" style="width:auto;">
+          <label for="rememberMe" style="margin:0; font-weight:normal;">Recordar sesión</label>
+        </div>
         <button type="submit" class="btn btn-primary btn-block">Ingresar</button>
       </form>
 
-      <div id="message" class="message hidden"></div>
+      <div id="message" class="message hidden" aria-live="polite"></div>
     </div>
   </div>
 
-  <script type="module" src="js/auth.js?v=4"></script>
+  <script type="module">
+    import { initTheme } from "./js/utils.js";
+    initTheme(document.getElementById("themeToggle"));
+  </script>
+  <script type="module" src="js/auth.js?v=5"></script>
 </body>
 </html>

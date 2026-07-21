@@ -44,6 +44,7 @@ Cuentas_FINCA/
 │   └── styles.css          # Estilos globales, responsive y componentes
 ├── js/
 │   ├── firebase-config.js  # Inicialización de Firebase y export de Firestore
+│   ├── utils.js            # Utilidades compartidas (formato, escape, spinner, theme)
 │   ├── auth.js             # Login con contraseña fija y gestión de sesión
 │   ├── admin.js            # Lógica del panel de administración
 │   └── worker.js           # Lógica de la vista del trabajador
@@ -66,9 +67,10 @@ Cuentas_FINCA/
 ### Módulos JavaScript
 
 - **`firebase-config.js`**: Inicializa Firebase y exporta `db` (instancia de Firestore). Aquí se deben actualizar las credenciales si el proyecto Firebase cambia.
-- **`auth.js`**: Contiene `ADMIN_PASSWORD`, maneja el login, define `isAdminLoggedIn()` y `logoutUser()`. Administra el flag `isAdmin` en `sessionStorage`.
-- **`admin.js`**: Carga la lista de trabajadores en tiempo real, permite crear trabajadores, abrir detalle, agregar adelantos, copiar enlace, enviar mensajes de WhatsApp y generar un reporte filtrable de adelantos.
-- **`worker.js`**: Lee el parámetro `id` de la URL, carga los datos del trabajador y sus adelantos, y muestra saldo e historial.
+- **`utils.js`**: Utilidades compartidas y reutilizadas por `admin.js` y `worker.js`. Exporta `formatMoney`, `formatDate`, `escapeHtml`, `showMessage`, `hideMessage`, `validatePhone`, `debounce`, `withLoading` (spinner en botones), `initTheme` (modo oscuro con persistencia en `localStorage`), `initModalEscape` (cerrar modales con Escape), `focusFirst`, y la constante `PAGE_SIZE` (50 para paginación).
+- **`auth.js`**: Contiene `ADMIN_PASSWORD`, maneja el login con checkbox "Recordar sesión" (guarda en `localStorage` o `sessionStorage`), define `isAdminLoggedIn()` (revisa ambos storages) y `logoutUser()` (limpia ambos storages).
+- **`admin.js`**: Carga la lista de trabajadores con una doble suscripción (workers + advances global) que elimina el N+1 al calcular saldos. Permite crear/editar trabajadores, abrir detalle, agregar/editar/eliminar adelantos individuales (con paginación de 50 en filas), copiar enlace, enviar mensajes de WhatsApp, buscar trabajadores en vivo, y generar un reporte filtrable por trabajador y rango de fechas (filtro aplicado en servidor con `where` sobre `date` + paginación; el total se calcula desde un cache en memoria alimentado por la suscripción global a `advances`). Inicializa modo oscuro y soporta cierre de modales con Escape + gestión de foco.
+- **`worker.js`**: Lee el parámetro `id` de la URL, carga los datos del trabajador y sus adelantos (con paginación de 50), y muestra saldo completo (consultado una sola vez sin `orderBy`) e historial. Inicializa modo oscuro.
 
 ### Hojas de estilo
 
@@ -101,11 +103,21 @@ advances/{advanceId}
 
 ### Índices necesarios
 
-El archivo `firestore.indexes.json` define el índice compuesto requerido:
+El archivo `firestore.indexes.json` define los índices compuestos requeridos:
 
 - Colección `advances`:
-  - `workerId` ASCENDING
-  - `date` DESCENDING
+  - `workerId` ASCENDING + `date` DESCENDING (detalle del trabajador)
+  - `workerId` ASCENDING + `date` ASCENDING (filtro de fechas + trabajador)
+  - `date` DESCENDING (reporte sin filtro de trabajador)
+  - `date` ASCENDING (reporte con rango ascendente)
+
+> Los índices de un solo campo (`date`) son creados automáticamente por Firestore, pero se declaran para mayor claridad.
+
+Desplegar con:
+
+```bash
+firebase deploy --only firestore:indexes
+```
 
 Si se agregan nuevas consultas con `orderBy` + `where`, habrá que añadir los índices correspondientes y desplegarlos en Firebase.
 
