@@ -7,6 +7,7 @@ Aplicación web simple para llevar el control de adelantos del personal de una f
 - El administrador puede registrar trabajadores, sus números de celular y los adelantos por fecha, valor y concepto.
 - Cada trabajador tiene un **enlace único** para ver su cuenta.
 - El admin puede enviar el enlace por WhatsApp.
+- El panel de administración incluye un **reporte de adelantos** con filtro por trabajador y rango de fechas.
 
 ## Tecnologías
 
@@ -20,14 +21,16 @@ Aplicación web simple para llevar el control de adelantos del personal de una f
 Cuentas_FINCA/
 ├── index.html              # Login de administrador
 ├── admin.html              # Panel del administrador
-├── worker.html             # Redirección al login
+├── worker.html             # Vista pública del trabajador
 ├── css/
 │   └── styles.css          # Estilos
 ├── js/
 │   ├── firebase-config.js  # Configuración de Firebase
 │   ├── auth.js             # Login con contraseña fija
-│   └── admin.js            # Lógica del administrador
+│   ├── admin.js            # Lógica del administrador
+│   └── worker.js           # Lógica de la vista del trabajador
 ├── firestore.rules         # Reglas abiertas (uso interno)
+├── firestore.indexes.json  # Índices compuestos de Firestore
 ├── firebase.json           # Configuración de Firebase Hosting
 └── README.md               # Este archivo
 ```
@@ -54,7 +57,18 @@ service cloud.firestore {
 
 ### Crear índices en Firestore
 
-La app necesita dos índices compuestos. Cuando intentes usarla, Firebase te dará enlaces para crearlos, o puedes crearlos manualmente en **Firestore Database > Indexes > Composite indexes**:
+La app necesita un índice compuesto en la colección `advances`. Puedes crearlo de dos formas:
+
+**Opción A - Firebase CLI (recomendada):**
+
+```bash
+firebase login
+firebase deploy --only firestore:indexes
+```
+
+**Opción B - Consola manual:**
+
+Ve a **Firestore Database > Indexes > Composite indexes** y crea:
 
 1. Colección: `advances`
    - `workerId` (Ascending)
@@ -69,6 +83,7 @@ La app necesita dos índices compuestos. Cuando intentes usarla, Firebase te dar
 5. Después de guardar un adelanto, usa el botón **📱 Avisar este adelanto por WhatsApp**.
 6. Usa el botón **🔗 Copiar enlace del trabajador** para copiar su enlace único.
 7. Usa el botón **📱 Avisar por WhatsApp** para enviar el aviso de registro con el enlace.
+8. En la sección **📊 Reporte de adelantos**, selecciona un trabajador y/o un rango de fechas, luego presiona **Filtrar** para ver el detalle y el total.
 
 ### Enlace del trabajador
 
