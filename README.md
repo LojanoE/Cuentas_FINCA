@@ -3,7 +3,7 @@
 Aplicación web simple para llevar el control de adelantos del personal de una finca.
 
 - Solo hay **un administrador**.
-- La contraseña de administrador es: **`Mirador1`**
+- La contraseña de administrador es: **`123`**
 - El administrador puede registrar trabajadores, sus números de celular y los adelantos por fecha, valor y concepto.
 - Cada trabajador tiene un **enlace único** para ver su cuenta.
 - El admin puede enviar el enlace por WhatsApp.
@@ -77,7 +77,7 @@ Ve a **Firestore Database > Indexes > Composite indexes** y crea:
 ## Cómo usar
 
 1. Abre la URL de GitHub Pages.
-2. Ingresa la contraseña: **`Mirador1`**
+2. Ingresa la contraseña: **`123`**
 3. Crea trabajadores con nombre y número de celular.
 4. Haz clic en un trabajador para ver su cuenta y agregar adelantos.
 5. Después de guardar un adelanto, usa el botón **📱 Avisar este adelanto por WhatsApp**.

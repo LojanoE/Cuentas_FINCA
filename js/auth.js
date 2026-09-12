@@ -1,6 +1,6 @@
 // CONTRASEÑA DE ADMINISTRADOR
 import { showMessage } from "./utils.js";
-const ADMIN_PASSWORD = "Mirador1";
+const ADMIN_PASSWORD = "123";
 
 // === LOGIN ADMIN ===
 const adminForm = document.getElementById("adminLoginForm");
